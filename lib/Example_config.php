@@ -1,7 +1,7 @@
 <?php
 class RouterosAPI_Config
 {
-    var $host      = "127.0.0.1"; // Mikrotik host ip
+    var $host      = ""; // Mikrotik host ip
     var $username  = "admin"; // Mikrotik login username
     var $password  = "123456"; // Mikrotik login password
     var $debug     = true; //  Show debug information
