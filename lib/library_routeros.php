@@ -1,8 +1,8 @@
 <?php
 
 
-require(realpath(dirname(__FILE__) . './vendor/routeros_api.class.php'));
-require(realpath(dirname(__FILE__) . './config.php'));
+require(realpath(dirname(__FILE__) . '/vendor/routeros_api.class.php'));
+require(realpath(dirname(__FILE__) . '/config.php'));
 
 $API = new RouterosAPI();
 $API_Config = new RouterosAPI_Config();
