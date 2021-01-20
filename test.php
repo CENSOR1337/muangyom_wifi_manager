@@ -12,4 +12,5 @@ function generateRandomString($length = 10)
 
 
 //print_r($api_lib->get_users());
-print_r($api_lib->remove_user("user1"));
+//print_r($api_lib->get_user("mw"));
+print_r($api_lib->get_users("testing_profile"));

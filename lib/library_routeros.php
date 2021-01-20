@@ -21,9 +21,23 @@ $API->delay = $API_Config->delay;
 
 
 /*********** utilities *************/
+function has_non_set($params)
+{
+    if (!isset($params)) {
+        echo "invalid in array";
+        return true;
+    }
+    return false;
+}
+
+function find_null($array)
+{
+   return in_array(null, $array, true);
+}
+
 function iso55891_To_tis620_To_utf8($object)
 {
-    if ($object) {
+    if ($object != null) {
         if (is_array($object)) {
             array_walk_recursive($object, function (&$item, $key) {
                 if (!mb_detect_encoding($item, 'utf-8', true)) {
@@ -40,15 +54,18 @@ function iso55891_To_tis620_To_utf8($object)
 
 function array_null_key_to_null_value(array $array, array $key_array)
 {
-    foreach ($key_array as $target_element) {
-        if ($target_element == null) {
-            continue;
+    if (count($array) >= 1) {
+        foreach ($key_array as $target_element) {
+            if ($target_element == null) {
+                continue;
+            }
+            if (!isset($array[$target_element])) {
+                $array[$target_element] = null;
+            }
         }
-        if (!isset($array[$target_element])) {
-            $array[$target_element] = null;
-        }
+        return ($array);
     }
-    return ($array);
+    return null;
 }
 
 /*********** library *************/
@@ -56,38 +73,92 @@ function array_null_key_to_null_value(array $array, array $key_array)
 class routeros_api_library
 {
     /**
-     * add user into Mikrotik
-     *
-     * @param string      $username         username to be added
-     *
+     * get all users from mikrotik
+     * @param string               $profile                profile filter (default : null)
+     * @param string               $hotspot_server         hotspot filter (default : null)
+     * 
      * @return array                Return all users informations
      */
-    public function get_users()
+    public function get_users($profile = null, $hotspot_server = null)
     {
+
+        if (has_non_set(func_get_args())) {
+            return;
+        }
         global $API;
         global $API_Config;
         $API_connection = $API->connect($API_Config->host, $API_Config->username, $API_Config->password);
         if ($API_connection) {
-            $API->write('/ip/hotspot/user/print');
-            $READ = $API->read(false);
-            $ARRAY = $API->parseResponse($READ);
-            $API->disconnect();
-            // Thai character
-            $ARRAY = iso55891_To_tis620_To_utf8($ARRAY);
-            // Use create index with null value insteand of null index
-            $returnArray = array();
-            $target_array = array(
-                "address", "comment", "email", "limit-bytes-in", "limit-bytes-out", "limit-bytes-total", "limit-uptime",
-                "mac-address", "name", "password", "profile", "routes", "server", "bytes-in", "bytes-out", "packets-in", "packets-out", "uptime"
-            );
-            foreach ($ARRAY as $element) {
-                $FilteredArray = array_null_key_to_null_value($element, $target_array);
-                array_push($returnArray, $FilteredArray);
+            //$ARRAY = $API->comm("/ip/hotspot/user/print");
+            $ArrayData = array();
+            if (isset($hotspot_server)) {
+                $ArrayData["?server"] = $php_errormsg;
             }
-            return $returnArray;
+            if (isset($profile)) {
+                $ArrayData["?profile"] = $profile;
+            }
+            $ARRAY = $API->comm("/ip/hotspot/user/print", $ArrayData);
+            $API->disconnect();
+            if (count($ARRAY) >= 1) {
+                // Thai character
+                $ARRAY = iso55891_To_tis620_To_utf8($ARRAY);
+                // Use create index with null value insteand of null index
+                $returnArray = array();
+                $target_array = array(
+                    "address", "comment", "email", "limit-bytes-in", "limit-bytes-out", "limit-bytes-total", "limit-uptime",
+                    "mac-address", "name", "password", "profile", "routes", "server", "bytes-in", "bytes-out", "packets-in", "packets-out", "uptime"
+                );
+                foreach ($ARRAY as $element) {
+                    $FilteredArray = array_null_key_to_null_value($element, $target_array);
+                    array_push($returnArray, $FilteredArray);
+                }
+                return $returnArray;
+            }
+            return null;
         }
         return "Can't connect to Mikrotik API";
     }
+
+    /**
+     * add user into Mikrotik
+     *
+     * @param string      $username         get in by username
+     * 
+     * @return array                Return all users informations
+     */
+    public function get_user($username)
+    {
+
+        if (find_null(func_get_args())) {
+            return;
+        }
+
+        global $API;
+        global $API_Config;
+        $API_connection = $API->connect($API_Config->host, $API_Config->username, $API_Config->password);
+        if ($API_connection) {
+            $ARRAY = $API->comm("/ip/hotspot/user/print", array("?name" => $username));
+            $API->disconnect();
+            if (count($ARRAY) >= 1) {
+                // Thai character
+                $ARRAY = iso55891_To_tis620_To_utf8($ARRAY);
+                // Use create index with null value insteand of null index
+                $returnArray = array();
+                $target_array = array(
+                    "address", "comment", "email", "limit-bytes-in", "limit-bytes-out", "limit-bytes-total", "limit-uptime",
+                    "mac-address", "name", "password", "profile", "routes", "server", "bytes-in", "bytes-out", "packets-in", "packets-out", "uptime"
+                );
+                foreach ($ARRAY as $element) {
+                    $FilteredArray = array_null_key_to_null_value($element, $target_array);
+                    array_push($returnArray, $FilteredArray);
+                }
+                return $returnArray;
+            }
+            return null;
+        }
+        return "Can't connect to Mikrotik API";
+    }
+
     /**
      * add user into Mikrotik
      *
@@ -100,6 +171,11 @@ class routeros_api_library
      */
     public function add_user(string $username, string $password, string $profile, bool $disabled = false, string $comment = null)
     {
+
+        if (has_non_set(func_get_args())) {
+            return;
+        }
+
         global $API;
         global $API_Config;
         $API_connection = $API->connect($API_Config->host, $API_Config->username, $API_Config->password);
@@ -136,6 +212,10 @@ class routeros_api_library
 
     public function remove_user($username)
     {
+        if (find_null(func_get_args())) {
+            return;
+        }
+
         global $API;
         global $API_Config;
         $API_connection = $API->connect($API_Config->host, $API_Config->username, $API_Config->password);
@@ -168,6 +248,10 @@ class routeros_api_library
      */
     public function toggle_disabled_user(string $username, bool $Disabled)
     {
+
+        if (find_null(func_get_args())) {
+            return;
+        }
 
         global $API;
         global $API_Config;
@@ -205,6 +289,11 @@ class routeros_api_library
      */
     public function edit_user(string $username, string $password, string $profile, bool $disabled = false, string $comment = null)
     {
+
+        if (has_non_set(func_get_args())) {
+            return;
+        }
+
         global $API;
         global $API_Config;
         $API_connection = $API->connect($API_Config->host, $API_Config->username, $API_Config->password);
